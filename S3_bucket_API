@@ -1,0 +1,39 @@
+import json
+import base64
+import boto3
+
+def lambda_handler(event, context):
+    s3 = boto3.client("s3")
+    
+    # For fetching bucket_name & file_name using proxy integration method from API Gateway
+    get_filecontent = event["content"]
+    bucket_name = event["pathParameters"]["bucket"]
+    file_name = event["queryStringParameters"]["file"]
+    dcode_content = base64.b64decode(get_filecontent)
+    
+    fileobj1=s3.get_object(Bucket=bucket_name, key=file_name)
+    
+    """
+    1. Generate pre-signed URL for downloading file
+    2. Replace get_object with put_object for generating pre-signed URL to upload file
+    3. Use PUT method while uploading file using Pre-Signed URL
+    """
+    URL = s3.generate_presigned_url("get_object", Params = {"Bucket": bucket_name, "Key": file_name},  ExpiresIn=3600)
+    fileobj1=s3.put_object(Bucket="", key = "index.html")
+    file_content=fileobj1["Body"].read()
+    print(bucket_name,file_name)
+    #return.base64.b64encode(file_content)
+    """
+    1. Generate pre-signed URL for downloading file
+    2. Use POST method while uploading file using Pre-Signed URL
+    """
+    #URL = s3.generate_presigned_post(Bucket=bucket_name, Key=file_name, Fields=None, Conditions=None, ExpiresIn=3600)
+    
+    return {
+        "statusCode": 200,
+        "headers": {
+            "Content-Type": "application/json"
+        },
+        "body": base64.b64encode(file_content),
+        "isBase64Encoded": True
+        }
